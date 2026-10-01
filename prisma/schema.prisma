@@ -11,29 +11,43 @@ datasource db {
 }
 
 model User {
-  id            String     @id @default(cuid())
-  clerkId       String     @unique
-  email         String     @unique
-  username      String     @unique
-  displayName   String?
-  avatar        String?
-  bio           String?
-  techStack     String[]   @default([])
-  location      String?
-  website       String?
-  github        String?
-  twitter       String?
-  createdAt     DateTime   @default(now())
-  updatedAt     DateTime   @updatedAt
+  id                String     @id @default(cuid())
+  clerkId           String     @unique
+  email             String     @unique
+  username          String     @unique
+  displayName       String?
+  avatar            String?
+  bio               String?
+  techStack         String[]   @default([])
+  location          String?
+  country           String?
+  region            String?
+  locale            String     @default("en")
+  timezone          String     @default("UTC")
+  website           String?
+  github            String?
+  twitter           String?
+  publicProfile     Boolean    @default(true)
+  isVerified        Boolean    @default(false)
+  isModerated       Boolean    @default(false)
+  lastActiveAt      DateTime   @default(now())
+  createdAt         DateTime   @default(now())
+  updatedAt         DateTime   @updatedAt
 
   // Relations
-  posts         Post[]
-  comments      Comment[]
-  likes         Like[]
-  sentMessages  Message[]  @relation("sender")
-  receivedMessages Message[] @relation("receiver")
-  connections   Connection[] @relation("user")
-  connectedBy   Connection[] @relation("connectedUser")
+  posts             Post[]
+  comments          Comment[]
+  likes             Like[]
+  sentMessages      Message[]  @relation("sender")
+  receivedMessages  Message[]  @relation("receiver")
+  connections       Connection[] @relation("user")
+  connectedBy       Connection[] @relation("connectedUser")
+
+  @@index([country])
+  @@index([region])
+  @@index([locale])
+  @@index([timezone])
+  @@index([lastActiveAt])
 }
 
 model Post {
@@ -41,6 +55,10 @@ model Post {
   content       String
   codeBlock     String?
   language      String?    @default("javascript")
+  locale        String     @default("en")
+  region        String?
+  country       String?
+  tags          String[]   @default([])
   images        String[]   @default([])
   likes         Int        @default(0)
   commentsCount Int        @default(0)
@@ -51,53 +69,57 @@ model Post {
   authorId      String
   author        User       @relation(fields: [authorId], references: [id], onDelete: Cascade)
   comments      Comment[]
-  likes         Like[]
+  likesRelation Like[]
 
   @@index([authorId])
   @@index([createdAt])
+  @@index([locale])
+  @@index([region])
+  @@index([country])
 }
 
 model Comment {
-  id            String     @id @default(cuid())
-  content       String
-  createdAt     DateTime   @default(now())
-  updatedAt     DateTime   @updatedAt
+  id        String   @id @default(cuid())
+  content   String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   // Relations
-  postId        String
-  post          Post       @relation(fields: [postId], references: [id], onDelete: Cascade)
-  authorId      String
-  author        User       @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  postId    String
+  post      Post     @relation(fields: [postId], references: [id], onDelete: Cascade)
+  authorId  String
+  author    User     @relation(fields: [authorId], references: [id], onDelete: Cascade)
 
   @@index([postId])
   @@index([authorId])
 }
 
 model Like {
-  id            String     @id @default(cuid())
-  createdAt     DateTime   @default(now())
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
 
   // Relations
-  postId        String
-  post          Post       @relation(fields: [postId], references: [id], onDelete: Cascade)
-  userId        String
-  user          User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  postId    String
+  post      Post     @relation(fields: [postId], references: [id], onDelete: Cascade)
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([postId, userId])
   @@index([userId])
 }
 
 model Connection {
-  id            String     @id @default(cuid())
-  status        String     @default("pending") // pending, accepted, blocked
-  createdAt     DateTime   @default(now())
-  updatedAt     DateTime   @updatedAt
+  id               String   @id @default(cuid())
+  status           String   @default("pending") // pending, accepted, blocked
+  source           String?  @default("discover")
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
 
   // Relations
-  userId        String
-  user          User       @relation("user", fields: [userId], references: [id], onDelete: Cascade)
-  connectedUserId String
-  connectedUser User       @relation("connectedUser", fields: [connectedUserId], references: [id], onDelete: Cascade)
+  userId           String
+  user             User     @relation("user", fields: [userId], references: [id], onDelete: Cascade)
+  connectedUserId  String
+  connectedUser    User     @relation("connectedUser", fields: [connectedUserId], references: [id], onDelete: Cascade)
 
   @@unique([userId, connectedUserId])
   @@index([userId])
@@ -105,17 +127,17 @@ model Connection {
 }
 
 model Message {
-  id            String     @id @default(cuid())
+  id            String   @id @default(cuid())
   content       String
   attachmentUrl String?
-  read          Boolean    @default(false)
-  createdAt     DateTime   @default(now())
+  read          Boolean  @default(false)
+  createdAt     DateTime @default(now())
 
   // Relations
   senderId      String
-  sender        User       @relation("sender", fields: [senderId], references: [id], onDelete: Cascade)
+  sender        User     @relation("sender", fields: [senderId], references: [id], onDelete: Cascade)
   receiverId    String
-  receiver      User       @relation("receiver", fields: [receiverId], references: [id], onDelete: Cascade)
+  receiver      User     @relation("receiver", fields: [receiverId], references: [id], onDelete: Cascade)
 
   @@index([senderId])
   @@index([receiverId])
